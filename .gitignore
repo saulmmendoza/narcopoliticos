@@ -1,0 +1,15 @@
+# Local HTTrack output directories (never committed; deployed via Actions)
+site/
+deploy/
+deploy_hash.txt
+
+# HTTrack metadata
+hts-cache/
+hts-log.txt
+cookies.txt
+*.nar
+*.log
+
+# OS artifacts
+.DS_Store
+Thumbs.db

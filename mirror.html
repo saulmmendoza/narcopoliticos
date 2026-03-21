@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How to Build an Automated Website Mirror with HTTrack &amp; GitHub Pages</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2e3147;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --code-bg: #0d1117;
+      --code-border: #30363d;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    header {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 2rem 2.5rem;
+      text-align: center;
+    }
+    header h1 {
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      color: var(--muted);
+      margin-top: .75rem;
+      font-size: 1.05rem;
+    }
+    .badge-row {
+      display: flex;
+      gap: .5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1.25rem;
+    }
+    .badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: .25rem .85rem;
+      font-size: .78rem;
+      color: var(--muted);
+      letter-spacing: .03em;
+    }
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 1rem;
+      padding-bottom: .4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 1.5rem 0 .6rem;
+    }
+    p, li { color: var(--text); margin-bottom: .55rem; }
+    ul, ol { padding-left: 1.4rem; }
+    li { margin-bottom: .35rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Architecture diagram */
+    .arch {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      flex-wrap: wrap;
+      margin: 1.25rem 0;
+      font-size: .9rem;
+    }
+    .arch-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .55rem 1rem;
+      white-space: nowrap;
+    }
+    .arch-arrow { color: var(--accent); font-size: 1.2rem; }
+
+    /* Code blocks */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: .82rem;
+      line-height: 1.6;
+      margin: .75rem 0 1.25rem;
+    }
+    code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+    p > code, li > code {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 4px;
+      padding: .1em .4em;
+      font-size: .85em;
+    }
+
+    /* Step cards */
+    .steps { display: flex; flex-direction: column; gap: 1.25rem; }
+    .step {
+      display: grid;
+      grid-template-columns: 2.5rem 1fr;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem 1.3rem;
+    }
+    .step-num {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: .85rem;
+      flex-shrink: 0;
+    }
+    .step-body h3 { margin-top: 0; }
+
+    /* Warning/note callouts */
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin: 1rem 0;
+      border-left: 4px solid;
+    }
+    .callout.warn { background: #1c1600; border-color: var(--warn); }
+    .callout.warn strong { color: var(--warn); }
+    .callout.info { background: #0d1a2d; border-color: var(--accent); }
+    .callout.info strong { color: var(--accent); }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin: .75rem 0 1.25rem; font-size: .88rem; }
+    th, td { text-align: left; padding: .55rem .8rem; border: 1px solid var(--border); }
+    th { background: var(--surface); color: var(--accent2); font-weight: 600; }
+    tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      font-size: .82rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Automated Website Mirror</h1>
+  <p>HTTrack &nbsp;+&nbsp; GitHub Actions &nbsp;+&nbsp; GitHub Pages</p>
+  <div class="badge-row">
+    <span class="badge">🔄 Weekly Sync</span>
+    <span class="badge">📦 Full Assets</span>
+    <span class="badge">⚡ Free Hosting</span>
+    <span class="badge">🔍 Diff Detection</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ─── 1. Architecture ─────────────────────────────── -->
+  <section id="architecture">
+    <h2>1 · Architecture Overview</h2>
+    <p>Three tools form a simple, zero-cost pipeline:</p>
+    <div class="arch">
+      <div class="arch-box">🌐 narcopoliticos.com</div>
+      <span class="arch-arrow">→</span>
+      <div class="arch-box">🤖 HTTrack (crawl)</div>
+      <span class="arch-arrow">→</span>
+      <div class="arch-box">⚙️ GitHub Actions (cron)</div>
+      <span class="arch-arrow">→</span>
+      <div class="arch-box">📁 <code>gh-pages</code> branch</div>
+      <span class="arch-arrow">→</span>
+      <div class="arch-box">🚀 GitHub Pages</div>
+    </div>
+    <ul>
+      <li><strong>HTTrack</strong> — CLI tool that recursively downloads a website, rewriting internal links so everything works offline.</li>
+      <li><strong>GitHub Actions</strong> — runs the crawl on a cron schedule (Sunday 03:00 UTC), detects whether content changed, and commits only when it did.</li>
+      <li><strong>GitHub Pages</strong> — serves the <code>gh-pages</code> branch as a static site at <code>https://&lt;user&gt;.github.io/&lt;repo&gt;/</code>.</li>
+    </ul>
+  </section>
+
+  <!-- ─── 2. Repository Structure ─────────────────────── -->
+  <section id="structure">
+    <h2>2 · Repository Structure</h2>
+    <pre><code>your-repo/
+├── .github/
+│   └── workflows/
+│       └── mirror.yml      ← the automation workflow
+├── mirror.html             ← this setup guide (served at /mirror.html)
+├── .gitignore
+└── README.md
+
+# gh-pages branch (auto-created by the workflow):
+gh-pages/
+├── index.html              ← mirrored site home page
+├── mirror.html             ← this guide
+└── ... (all mirrored assets)</code></pre>
+  </section>
+
+  <!-- ─── 3. Workflow YAML ──────────────────────────────── -->
+  <section id="workflow">
+    <h2>3 · GitHub Actions Workflow</h2>
+    <p>Save this as <code>.github/workflows/mirror.yml</code>:</p>
+    <pre><code>name: Mirror narcopoliticos.com
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"   # Every Sunday at 03:00 UTC
+  workflow_dispatch:        # On-demand manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install HTTrack
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends httrack
+
+      - name: Mirror narcopoliticos.com
+        run: |
+          mkdir -p site
+          httrack "https://narcopoliticos.com" \
+            -O "./site" \
+            "+*.narcopoliticos.com/*" \
+            -v \
+            --mirror \
+            --depth=10 \
+            --max-rate=50000 \
+            --connection-per-second=1 \
+            --sockets=4 \
+            --timeout=30 \
+            --retries=3 \
+            --robots=0 \
+            -A999999999 \
+            --near \
+            --nowrap \
+            -F "Mozilla/5.0 (compatible; HTTrack/3.49-2)" \
+            --disable-security-limits
+
+      - name: Assemble deploy directory
+        run: |
+          mkdir -p deploy
+          if [ -d "site/narcopoliticos.com" ]; then
+            cp -r site/narcopoliticos.com/. deploy/
+          else
+            cp -r site/. deploy/
+          fi
+          cp mirror.html deploy/mirror.html
+          rm -f deploy/hts-cache deploy/cookies.txt deploy/hts-log.txt
+
+      # Restore the hash saved by the previous successful run so we can
+      # skip deployment when the crawled content has not changed.
+      - name: Restore content hash cache
+        uses: actions/cache/restore@v4
+        with:
+          path: deploy_hash.txt
+          key: site-hash-${{ github.run_id }}
+          restore-keys: |
+            site-hash-
+
+      - name: Check for changes
+        id: diff
+        run: |
+          PREV=""
+          [ -f deploy_hash.txt ] &amp;&amp; PREV=$(cat deploy_hash.txt)
+          CURR=$(find deploy -type f | sort | xargs md5sum 2&gt;/dev/null \
+                 | md5sum | awk '{print $1}')
+          echo "prev=$PREV  curr=$CURR"
+          if [ "$PREV" != "$CURR" ]; then
+            echo "$CURR" &gt; deploy_hash.txt
+            echo "changed=true"  &gt;&gt; "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" &gt;&gt; "$GITHUB_OUTPUT"
+          fi
+
+      - name: Save content hash cache
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: deploy_hash.txt
+          key: site-hash-${{ github.run_id }}
+
+      - name: Deploy to GitHub Pages
+        if: steps.diff.outputs.changed == 'true'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          publish_branch: gh-pages
+          commit_message: "mirror: update ${{ github.run_number }}"
+          force_orphan: false
+          enable_jekyll: false
+
+      - name: No changes – skip deploy
+        if: steps.diff.outputs.changed == 'false'
+        run: echo "Content unchanged."</code></pre>
+  </section>
+
+  <!-- ─── 4. HTTrack Command ───────────────────────────── -->
+  <section id="httrack">
+    <h2>4 · HTTrack Command Configuration</h2>
+    <pre><code>httrack "https://narcopoliticos.com" \
+  -O "./site"                    # Output folder
+  "+*.narcopoliticos.com/*"      # Include everything on the domain
+  -v                             # Verbose output
+  --mirror                       # Full mirror mode (-w)
+  --depth=10                     # Max crawl depth
+  --max-rate=50000               # Download cap: 50 KB/s (polite)
+  --connection-per-second=1      # Max 1 new connection per second
+  --sockets=4                    # Parallel connections
+  --timeout=30                   # Per-request timeout (seconds)
+  --retries=3                    # Retry failed requests 3 times
+  --robots=0                     # Ignore robots.txt
+  -A999999999                    # Max individual file size (no cap)
+  --near                         # Fetch near-linked assets
+  --nowrap                       # Don't wrap long log lines
+  -F "Mozilla/5.0 ..."           # Custom User-Agent
+  --disable-security-limits      # Allow deeper crawls</code></pre>
+
+    <h3>Include / Exclude Rules</h3>
+    <table>
+      <tr><th>Flag</th><th>Effect</th></tr>
+      <tr><td><code>+*.narcopoliticos.com/*</code></td><td>Include all pages &amp; assets on the primary domain</td></tr>
+      <tr><td><code>-*.youtube.com/*</code></td><td>Exclude embedded YouTube videos</td></tr>
+      <tr><td><code>-ad.doubleclick.net</code></td><td>Exclude ad networks</td></tr>
+      <tr><td><code>+*.narcopoliticos.com/*.css</code></td><td>Force-include stylesheets even if cross-domain</td></tr>
+    </table>
+    <p>Add additional rules between the URL and <code>-O</code>. Rules are evaluated in order; first match wins.</p>
+  </section>
+
+  <!-- ─── 5. GitHub Pages Setup ───────────────────────── -->
+  <section id="pages">
+    <h2>5 · Deployment to GitHub Pages</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Enable GitHub Pages</h3>
+          <p>Go to <strong>Settings → Pages</strong> in your repository. Under <em>Source</em>, select <strong>Deploy from a branch</strong> and choose <code>gh-pages</code> / <code>(root)</code>. Click <strong>Save</strong>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Allow Actions to write</h3>
+          <p>Go to <strong>Settings → Actions → General → Workflow permissions</strong> and select <strong>Read and write permissions</strong>. This lets the workflow push to <code>gh-pages</code>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>First manual run</h3>
+          <p>In <strong>Actions → Mirror narcopoliticos.com</strong>, click <strong>Run workflow</strong> to trigger the first crawl immediately. The <code>gh-pages</code> branch is created automatically.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h3>Access your mirror</h3>
+          <p>Once deployed, your mirror is live at:</p>
+          <pre><code>https://&lt;username&gt;.github.io/&lt;repository-name&gt;/</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── 6. Optional Enhancements ─────────────────────── -->
+  <section id="enhancements">
+    <h2>6 · Optional Enhancements</h2>
+
+    <h3>Diff Detection (already included)</h3>
+    <p>The workflow computes an MD5 fingerprint of every file in the deploy directory and only commits when the fingerprint changes.</p>
+
+    <h3>Email / Slack Notifications</h3>
+    <pre><code># Add to the bottom of the workflow job:
+- name: Notify on success
+  if: steps.diff.outputs.changed == 'true'
+  uses: slackapi/slack-github-action@v1
+  with:
+    payload: '{"text":"Mirror updated: ${{ github.server_url }}/${{ github.repository }}"}'
+  env:
+    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}</code></pre>
+
+    <h3>Snapshot / Versioned Archives</h3>
+    <pre><code># After the Assemble step, add:
+- name: Create dated archive
+  run: |
+    DATE=$(date +%Y-%m-%d)
+    tar -czf "snapshot-${DATE}.tar.gz" deploy/
+    # Upload as a GitHub release asset or store in a separate branch</code></pre>
+
+    <h3>Multi-site Mirroring</h3>
+    <pre><code>strategy:
+  matrix:
+    site:
+      - url: "https://narcopoliticos.com"
+        name: narcopoliticos
+      - url: "https://example.org"
+        name: example
+# Then reference ${{ matrix.site.url }} and ${{ matrix.site.name }}</code></pre>
+  </section>
+
+  <!-- ─── 7. Limitations & Risks ───────────────────────── -->
+  <section id="risks">
+    <h2>7 · Limitations &amp; Risks</h2>
+
+    <div class="callout warn">
+      <strong>⚠ Legal Considerations</strong>
+      <p>Always confirm you have the right to mirror a website. Check the site's <code>robots.txt</code>, Terms of Service, and applicable copyright law before crawling.</p>
+    </div>
+
+    <table>
+      <tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr>
+      <tr>
+        <td>Dynamic / JS-rendered sites</td>
+        <td>Content may be missing</td>
+        <td>Use <code>--assume=php%html</code> or switch to Playwright-based crawlers</td>
+      </tr>
+      <tr>
+        <td>IP blocking / rate limits</td>
+        <td>Crawl fails mid-run</td>
+        <td>Lower <code>--connection-per-second</code>, use residential proxies</td>
+      </tr>
+      <tr>
+        <td>Login-gated content</td>
+        <td>Private pages not mirrored</td>
+        <td>Provide session cookies via <code>--cookie</code> flag with GitHub Secrets</td>
+      </tr>
+      <tr>
+        <td>Repository size limits</td>
+        <td>Push may fail (&gt;1 GB)</td>
+        <td>Enable Git LFS, or deploy only the diff via rsync to external hosting</td>
+      </tr>
+      <tr>
+        <td>GitHub Pages 1 GB limit</td>
+        <td>Deployment may be refused</td>
+        <td>Strip media with <code>-*.mp4</code> HTTrack exclude rules</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- ─── 8. Step-by-step Setup Guide ─────────────────── -->
+  <section id="setup-guide">
+    <h2>8 · Step-by-step Setup Guide</h2>
+    <p>From an empty repository to a fully working automated mirror:</p>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Create a new GitHub repository</h3>
+          <pre><code>gh repo create my-mirror --public --clone
+cd my-mirror</code></pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Add the workflow file</h3>
+          <pre><code>mkdir -p .github/workflows
+curl -o .github/workflows/mirror.yml \
+  https://raw.githubusercontent.com/saulmmendoza/narcopoliticos/main/.github/workflows/mirror.yml</code></pre>
+          <p>Edit the workflow and replace <code>narcopoliticos.com</code> with your target URL.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Add this instructions page</h3>
+          <pre><code>curl -o mirror.html \
+  https://raw.githubusercontent.com/saulmmendoza/narcopoliticos/main/mirror.html</code></pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h3>Commit and push</h3>
+          <pre><code>git add .github/workflows/mirror.yml mirror.html
+git commit -m "feat: add automated mirror workflow"
+git push origin main</code></pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h3>Configure repository settings</h3>
+          <ul>
+            <li><strong>Settings → Actions → General → Workflow permissions</strong> → <em>Read and write permissions</em></li>
+            <li><strong>Settings → Pages → Source</strong> → <em>Deploy from a branch</em> → <code>gh-pages</code> / <code>(root)</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <h3>Trigger the first run</h3>
+          <pre><code>gh workflow run mirror.yml</code></pre>
+          <p>Or click <strong>Run workflow</strong> in the GitHub Actions UI.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">7</div>
+        <div class="step-body">
+          <h3>Visit your live mirror</h3>
+          <pre><code>https://&lt;username&gt;.github.io/&lt;repo-name&gt;/</code></pre>
+          <p>The mirror auto-updates every Sunday at 03:00 UTC and only re-deploys when content has changed.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="callout info">
+      <strong>ℹ️ Custom Domain</strong>
+      <p>Add a <code>CNAME</code> file containing your custom domain to the <code>deploy/</code> directory in the workflow's "Assemble" step (e.g., <code>echo "mirror.yourdomain.com" &gt; deploy/CNAME</code>), then configure a CNAME DNS record pointing to <code>&lt;username&gt;.github.io</code>.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Built with HTTrack · GitHub Actions · GitHub Pages &nbsp;|&nbsp;
+  <a href="https://github.com/saulmmendoza/narcopoliticos">View source on GitHub</a>
+</footer>
+
+</body>
+</html>

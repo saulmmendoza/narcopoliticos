@@ -1,0 +1,131 @@
+name: Mirror narcopoliticos.com
+
+# ──────────────────────────────────────────────────────────────
+# Triggers
+# ──────────────────────────────────────────────────────────────
+on:
+  schedule:
+    - cron: "0 3 * * 0" # Every Sunday at 03:00 UTC
+  workflow_dispatch: # Allow on-demand manual runs
+
+# ──────────────────────────────────────────────────────────────
+# Permissions needed to push to gh-pages
+# ──────────────────────────────────────────────────────────────
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    name: Crawl & Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 120 # Safety valve – adjust for large sites
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Install HTTrack ─────────────────────────────────
+      - name: Install HTTrack
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends httrack
+
+      # ── 3. Run HTTrack mirror ──────────────────────────────
+      - name: Mirror narcopoliticos.com
+        run: |
+          mkdir -p site
+
+          httrack "https://narcopoliticos.com" \
+            -O "./site" \
+            "+*.narcopoliticos.com/*" \
+            -v \
+            --mirror \
+            --depth=10 \
+            --max-rate=50000 \
+            --connection-per-second=1 \
+            --sockets=4 \
+            --timeout=30 \
+            --retries=3 \
+            --robots=0 \
+            -A999999999 \
+            --near \
+            --nowrap \
+            -F "Mozilla/5.0 (compatible; HTTrack/3.49-2; +https://www.httrack.com)" \
+            --disable-security-limits
+        # continue-on-error intentionally omitted so a total failure
+        # is visible in the Actions UI; partial crawls still commit below.
+
+      # ── 4. Assemble the deploy directory ──────────────────
+      - name: Assemble deploy directory
+        run: |
+          mkdir -p deploy
+
+          # Copy mirrored site content (HTTrack places it in a
+          # sub-folder named after the domain)
+          if [ -d "site/narcopoliticos.com" ]; then
+            cp -r site/narcopoliticos.com/. deploy/
+          elif [ -d "site" ]; then
+            # Fallback: copy everything HTTrack produced
+            cp -r site/. deploy/
+          fi
+
+          # Place the setup-instructions page at the root so it is
+          # always accessible at https://<org>.github.io/<repo>/mirror.html
+          cp mirror.html deploy/mirror.html
+
+          # Remove HTTrack bookmarks / cookies that are not needed
+          rm -f deploy/hts-cache deploy/cookies.txt deploy/hts-log.txt
+
+      # ── 5. Restore previous content hash ──────────────────
+      - name: Restore content hash cache
+        uses: actions/cache/restore@v4
+        with:
+          path: deploy_hash.txt
+          # A unique key that never matches forces a fall-through to
+          # restore-keys, which picks up the most-recently saved entry.
+          key: site-hash-${{ github.run_id }}
+          restore-keys: |
+            site-hash-
+
+      # ── 6. Detect changes ─────────────────────────────────
+      - name: Check for changes
+        id: diff
+        run: |
+          PREV_HASH=""
+          if [ -f deploy_hash.txt ]; then
+            PREV_HASH=$(cat deploy_hash.txt)
+          fi
+          CURR_HASH=$(find deploy -type f | sort | xargs md5sum 2>/dev/null | md5sum | awk '{print $1}')
+          echo "prev=$PREV_HASH"
+          echo "curr=$CURR_HASH"
+          if [ "$PREV_HASH" != "$CURR_HASH" ]; then
+            echo "$CURR_HASH" > deploy_hash.txt
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── 7. Save hash for future runs ──────────────────────
+      - name: Save content hash cache
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: deploy_hash.txt
+          key: site-hash-${{ github.run_id }}
+
+      # ── 8. Deploy to gh-pages ─────────────────────────────
+      - name: Deploy to GitHub Pages
+        if: steps.diff.outputs.changed == 'true'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          publish_branch: gh-pages
+          commit_message: "mirror: update ${{ github.run_number }} (${{ github.run_id }})"
+          force_orphan: false
+          enable_jekyll: false
+
+      - name: No changes detected
+        if: steps.diff.outputs.changed == 'false'
+        run: echo "Site content unchanged – skipping deployment."
