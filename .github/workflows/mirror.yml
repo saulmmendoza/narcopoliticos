@@ -30,7 +30,18 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends httrack
 
-      # ── 3. Run HTTrack mirror ──────────────────────────────
+      # ── 3. Restore previous mirror cache ──────────────────
+      - name: Restore mirror cache
+        uses: actions/cache/restore@v4
+        with:
+          path: site
+          # A unique key that never matches forces a fall-through to
+          # restore-keys, which picks up the most-recently saved entry.
+          key: site-mirror-${{ github.run_id }}
+          restore-keys: |
+            site-mirror-
+
+      # ── 4. Run HTTrack mirror ──────────────────────────────
       - name: Mirror narcopoliticos.com
         run: |
           mkdir -p site
@@ -53,7 +64,14 @@ jobs:
         # continue-on-error intentionally omitted so a total failure
         # is visible in the Actions UI; partial crawls still commit below.
 
-      # ── 4. Assemble the deploy directory ──────────────────
+      # ── 5. Save mirror cache ───────────────────────────────
+      - name: Save mirror cache
+        uses: actions/cache/save@v4
+        with:
+          path: site
+          key: site-mirror-${{ github.run_id }}
+
+      # ── 6. Assemble the deploy directory ──────────────────
       - name: Assemble deploy directory
         run: |
           mkdir -p deploy
@@ -74,7 +92,7 @@ jobs:
           # Remove HTTrack bookmarks / cookies that are not needed
           rm -f deploy/hts-cache deploy/cookies.txt deploy/hts-log.txt
 
-      # ── 5. Restore previous content hash ──────────────────
+      # ── 7. Restore previous content hash ──────────────────
       - name: Restore content hash cache
         uses: actions/cache/restore@v4
         with:
@@ -85,7 +103,7 @@ jobs:
           restore-keys: |
             site-hash-
 
-      # ── 6. Detect changes ─────────────────────────────────
+      # ── 8. Detect changes ─────────────────────────────────
       - name: Check for changes
         id: diff
         run: |
@@ -103,7 +121,7 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # ── 7. Save hash for future runs ──────────────────────
+      # ── 9. Save hash for future runs ──────────────────────
       - name: Save content hash cache
         if: steps.diff.outputs.changed == 'true'
         uses: actions/cache/save@v4
@@ -111,7 +129,7 @@ jobs:
           path: deploy_hash.txt
           key: site-hash-${{ github.run_id }}
 
-      # ── 8. Deploy to gh-pages ─────────────────────────────
+      # ── 10. Deploy to gh-pages ────────────────────────────
       - name: Deploy to GitHub Pages
         if: steps.diff.outputs.changed == 'true'
         uses: peaceiris/actions-gh-pages@v4
