@@ -18,8 +18,7 @@ jobs:
   mirror:
     name: Crawl & Deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 120 # Safety valve – adjust for large sites
-
+    timeout-minutes: 10 # Safety valve – adjust for large sites
     steps:
       # ── 1. Checkout ────────────────────────────────────────
       - name: Checkout repository
@@ -35,7 +34,6 @@ jobs:
       - name: Mirror narcopoliticos.com
         run: |
           mkdir -p site
-
           httrack "https://narcopoliticos.com" \
             -O "./site" \
             "+*.narcopoliticos.com/*" \
@@ -50,7 +48,6 @@ jobs:
             --robots=0 \
             -A999999999 \
             --near \
-            --nowrap \
             -F "Mozilla/5.0 (compatible; HTTrack/3.49-2; +https://www.httrack.com)" \
             --disable-security-limits
         # continue-on-error intentionally omitted so a total failure
