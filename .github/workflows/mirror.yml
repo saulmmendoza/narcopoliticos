@@ -18,7 +18,7 @@ jobs:
   mirror:
     name: Crawl & Deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 10 # Safety valve – adjust for large sites
+    timeout-minutes: 30 # Safety valve – adjust for large sites
     steps:
       # ── 1. Checkout ────────────────────────────────────────
       - name: Checkout repository
