@@ -57,14 +57,15 @@ jobs:
             -v \
             --mirror \
             --depth=10 \
-            --max-rate=50000 \
-            --connection-per-second=1 \
-            --sockets=4 \
-            --timeout=30 \
-            --retries=3 \
+            --max-rate=25000 \
+            --connection-per-second=0.5 \
+            --sockets=1 \
+            --timeout=60 \
+            --retries=5 \
             --robots=0 \
             -A999999999 \
             --near \
+            -%e100 \
             -F "Mozilla/5.0 (compatible; HTTrack/3.49-2; +https://www.httrack.com)" \
             --disable-security-limits
         # continue-on-error intentionally omitted so a total failure
