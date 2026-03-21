@@ -5,7 +5,7 @@ name: Mirror narcopoliticos.com
 # ──────────────────────────────────────────────────────────────
 on:
   schedule:
-    - cron: "0 3 * * 0" # Every Sunday at 03:00 UTC
+    - cron: "0 0 * * *"  # Daily at 00:00
   workflow_dispatch: # Allow on-demand manual runs
 
 # ──────────────────────────────────────────────────────────────
