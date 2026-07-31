@@ -224,12 +224,12 @@ a.leaflet-control-zoom-in, .leaflet-control-zoom-out {
 }
 
 .mapp-google-geolocate > div {
-	background-image: url('../images/geolocate.svg');
+	background-image: url('../images/geolocate.html');
 	background-size: 18px 18px;
 }
 
 .mapp-leaflet-geolocate > div {
-	background-image: url('../images/geolocate.svg');
+	background-image: url('../images/geolocate.html');
 	background-size: 14px 14px;
 }
 
@@ -508,7 +508,7 @@ a.leaflet-control-zoom-in, .leaflet-control-zoom-out {
 }
 
 .mapp-autocomplete-button {
-	background: url('../images/search_black.html') no-repeat center;
+	background: url('../images/search_black.png') no-repeat center;
 	background-size: contain;
 	cursor: pointer;
 	position: absolute;
