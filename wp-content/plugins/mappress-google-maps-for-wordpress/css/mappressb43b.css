@@ -224,12 +224,12 @@ a.leaflet-control-zoom-in, .leaflet-control-zoom-out {
 }
 
 .mapp-google-geolocate > div {
-	background-image: url('../images/geolocate.html');
+	background-image: url('../images/geolocate.svg');
 	background-size: 18px 18px;
 }
 
 .mapp-leaflet-geolocate > div {
-	background-image: url('../images/geolocate.html');
+	background-image: url('../images/geolocate.svg');
 	background-size: 14px 14px;
 }
 
@@ -508,7 +508,7 @@ a.leaflet-control-zoom-in, .leaflet-control-zoom-out {
 }
 
 .mapp-autocomplete-button {
-	background: url('../images/search_black.png') no-repeat center;
+	background: url('../images/search_black.html') no-repeat center;
 	background-size: contain;
 	cursor: pointer;
 	position: absolute;
@@ -589,7 +589,7 @@ a.leaflet-control-zoom-in, .leaflet-control-zoom-out {
 }
 
 .mapp-filter-spinner {
-	background: transparent url(../images/spinner-2x.html) no-repeat center center;
+	background: transparent url(../images/spinner-2x.gif) no-repeat center center;
 	height: 24px;
 	width: 24px;
 	margin-left: 10px;
@@ -1209,7 +1209,7 @@ a.leaflet-control-zoom-in, .leaflet-control-zoom-out {
 }
 
 .mapp-dir-arrows {
-	background: transparent url('../images/swapvert.svg') no-repeat center center;
+	background: transparent url('../images/swapvert.html') no-repeat center center;
 	cursor: pointer;
 	height: 30px;
 	margin-left: 5px;
@@ -1445,7 +1445,7 @@ a.leaflet-control-zoom-in, .leaflet-control-zoom-out {
 
 /* https://www.w3schools.com/howto/howto_css_loader.asp */
 .mapp-modal-spinner {
-	background: transparent url(../images/spinner-2x.html) no-repeat center center;
+	background: transparent url(../images/spinner-2x.gif) no-repeat center center;
 	height: 40px;
 	width: 40px;
 	margin-left: 10px;
@@ -1772,7 +1772,7 @@ img.mapp-icon, .mapp-icon img {
 }
 
 .mapp-button-busy:after {
-	background: transparent url(../images/spinner-2x.html) no-repeat center center;
+	background: transparent url(../images/spinner-2x.gif) no-repeat center center;
 	background-size: 20px 20px;
 	content: '';
 	height: 20px;
