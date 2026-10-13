@@ -147,7 +147,7 @@ a.leaflet-control-zoom-in, .leaflet-control-zoom-out {
 
 /* https://icons8.com/preloaders/en/circular# */
 .mapp-spinner {
-	background: transparent url(../images/loading.gif) no-repeat center center;
+	background: transparent url(../images/loading.html) no-repeat center center;
 	background-size: 64px;
 	display: inline-block;
 	height: 64px;
@@ -224,12 +224,12 @@ a.leaflet-control-zoom-in, .leaflet-control-zoom-out {
 }
 
 .mapp-google-geolocate > div {
-	background-image: url('../images/geolocate.svg');
+	background-image: url('../images/geolocate.html');
 	background-size: 18px 18px;
 }
 
 .mapp-leaflet-geolocate > div {
-	background-image: url('../images/geolocate.svg');
+	background-image: url('../images/geolocate.html');
 	background-size: 14px 14px;
 }
 
@@ -519,7 +519,7 @@ a.leaflet-control-zoom-in, .leaflet-control-zoom-out {
 }		
 
 .mapp-autocomplete-button:hover {
-	background: url('../images/search_blue.png') no-repeat center;
+	background: url('../images/search_blue.html') no-repeat center;
 	background-size: contain;
 }    
 
@@ -1209,7 +1209,7 @@ a.leaflet-control-zoom-in, .leaflet-control-zoom-out {
 }
 
 .mapp-dir-arrows {
-	background: transparent url('../images/swapvert.svg') no-repeat center center;
+	background: transparent url('../images/swapvert.html') no-repeat center center;
 	cursor: pointer;
 	height: 30px;
 	margin-left: 5px;
